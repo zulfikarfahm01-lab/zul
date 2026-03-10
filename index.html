@@ -9,26 +9,21 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Fraunces:wght@700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #FAF7F2; --bg-sec: #F3EDE4; --fg: #2D2A26; --muted: #6B6560;
-            --accent: #0D7377; --accent-l: #14919B; --success: #2E8B57; --warn: #D97706;
-            --card: #FFF; --border: #E5DFD5; --hl: #E8F4F4;
-        }
+        :root { --bg: #FAF7F2; --bg-sec: #F3EDE4; --fg: #2D2A26; --muted: #6B6560; --accent: #0D7377; --accent-l: #14919B; --success: #2E8B57; --warn: #D97706; --card: #FFF; --border: #E5DFD5; }
         * { box-sizing: border-box; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--fg); }
         .font-display { font-family: 'Fraunces', serif; }
         
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
         .btn { background: linear-gradient(135deg, var(--accent), var(--accent-l)); color: white; font-weight: 600; padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; }
-        .btn-sec { background: white; color: var(--accent); border: 2px solid var(--accent); background: transparent; }
         
-        .tbl { width: 100%; border-collapse: collapse; }
-        .tbl th { background: var(--bg-sec); padding: 8px; text-align: left; font-size: 0.75rem; text-transform: uppercase; color: var(--muted); }
-        .tbl td { padding: 8px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .tbl { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .tbl th { background: var(--bg-sec); padding: 8px; text-align: left; font-size: 0.7rem; text-transform: uppercase; color: var(--muted); }
+        .tbl td { padding: 8px; border-bottom: 1px solid var(--border); }
         
         .chart-box { height: 250px; position: relative; }
         
-        /* PDF Fixes */
+        /* PDF */
         .pdf-mode { background: white !important; width: 210mm; margin: 0 auto; }
         .pdf-mode .no-print { display: none !important; }
         .pdf-mode .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
@@ -37,16 +32,16 @@
 </head>
 <body class="p-4 md:p-8">
 
-    <!-- Halaman Login/Cari -->
+    <!-- Halaman Login -->
     <section id="login" class="max-w-md mx-auto text-center py-20">
-        <div class="animate-bounce mb-6 text-6xl">📊</div>
+        <div class="text-6xl mb-6">📊</div>
         <h1 class="font-display text-3xl font-bold mb-2">Pemantauan Try Out</h1>
         <p class="text-[var(--muted)] mb-8">Tekan tombol di bawah untuk memuat data.</p>
         
         <button id="btnLoad" class="btn w-full mb-4">Muat Data Siswa</button>
         
-        <div id="status" class="text-left text-xs bg-white p-4 rounded border hidden">
-            <b class="text-gray-400 block mb-2">LOG:</b>
+        <div id="status" class="text-left text-xs bg-white p-4 rounded border hidden overflow-auto max-h-60">
+            <b class="text-gray-400 block mb-2">LOG PROSES:</b>
             <div id="log" class="font-mono space-y-1"></div>
         </div>
     </section>
@@ -120,192 +115,204 @@
     <script>
         // == KONFIGURASI ==
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkELVG1kzMO7l-FyObUwG2y8En19INkNGGfXKsIlx9br8MiOe7IfAcj2ng1GrLVhy1sAqquDSKIxKD/pub?output=csv';
-        
-        // Daftar Proxy (Jika 1 gagal, coba yang lain)
         const PROXIES = [
             (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
             (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`
         ];
 
         let DB = [], CURR = null, cLine = null, cRadar = null;
-        const K = ['PU','PPU','PBM','PK','LitInd','LitIng','PM'];
+        // Key internal -> Label di UI
+        const K = ['PU', 'PPU', 'PBM', 'PK', 'LitInd', 'LitIng', 'PM'];
 
         const $ = (id) => document.getElementById(id);
         const log = (m, e = false) => { 
             console.log(m); 
-            const el = $('log'); 
-            if(el) el.innerHTML += `<div style="color:${e?'red':'black'}">${m}</div>`; 
+            if($('log')) $('log').innerHTML += `<div style="color:${e?'red':'black'}">${m}</div>`; 
             $('status').classList.remove('hidden');
         };
 
-        // == PARSER ==
+        // == PARSER KHUSUS HEADER BARU ==
         function parse(t) {
             const L = t.split(/\r?\n/);
             if(L.length < 2) throw new Error("Data kosong");
             
-            // Split cerdas
-            const split = l => {
-                let r=[], c='', q=false;
-                for(let ch of l) {
-                    if(ch=='"') q=!q;
-                    else if(ch==','&&!q) { r.push(c.trim()); c=''; } else c+=ch;
-                }
-                r.push(c.trim());
-                return r;
+            const split = l => { let r=[], c='', q=false; for(let ch of l){ if(ch=='"')q=!q; else if(ch==','&&!q){r.push(c.trim());c='';}else c+=ch; } r.push(c.trim()); return r; };
+            
+            // Ubah header ke huruf kecil
+            const H = split(L[0]).map(h => h.replace(/"/g, '').trim().toLowerCase());
+            log(`Headers: ${H.join(', ')}`);
+
+            // Fungsi cari index
+            const idx = (name) => H.findIndex(h => h === name.toLowerCase());
+
+            // Mapping Sesuai Header Baru Anda
+            const COL = {
+                id:    idx('no peserta'),
+                n:     idx('nama siswa'),
+                to:    idx('to'),
+                // Skor Subtes
+                sPU:   idx('pu'),
+                sPPU:  idx('ppu'),
+                sPBM:  idx('pbm'),
+                sPK:   idx('pk'),
+                sLitInd: idx('litind'), // header baru
+                sLitIng: idx('liting'), // header baru
+                sPM:   idx('pm'),
+                // Rata2
+                av:    idx('rerata_siswa'), // header baru
+                cav:   idx('rerata_to')     // header baru
             };
 
-            const H = split(L[0]).map(h=>h.replace(/"/g,'').trim().toLowerCase());
-            const idx = { n: H.findIndex(h=>h.includes('nama')&&!h.includes('peserta')), id: H.findIndex(h=>h.includes('no')||h.includes('peserta')), to: H.findIndex(h=>h=='to'), av: H.findIndex(h=>h.includes('rata')&&h.includes('skor')&&!h.includes('tiap')), cav: H.findIndex(h=>h.includes('rerata')||h.includes('tiap')) };
-            
-            if(idx.n==-1||idx.to==-1) throw new Error("Format kolom salah. Cek 'Nama' & 'TO'");
-            
+            log(`Map -> Nama:${COL.n} ID:${COL.id} TO:${COL.to}`);
+            log(`Subtes -> PU:${COL.sPU} PPU:${COL.sPPU} PBM:${COL.sPBM} PK:${COL.sPK} LInd:${COL.sLitInd} LIng:${COL.sLitIng} PM:${COL.sPM}`);
+            log(`Rata2 -> Siswa:${COL.av} Angkatan:${COL.cav}`);
+
+            if(COL.n === -1 || COL.to === -1) throw new Error("Kolom Nama/TO tidak ditemukan!");
+
             const D = [];
             for(let i=1; i<L.length; i++) {
                 if(!L[i].trim()) continue;
                 const V = split(L[i]);
-                const r = {};
-                // Data dasar
-                r._n = V[idx.n]||'';
-                r._id = V[idx.id]||'';
-                r._to = parseFloat(V[idx.to])||0;
-                r._av = parseFloat(V[idx.av])||0;
-                r._cav = parseFloat(V[idx.cav])||0;
                 
-                // Skor
-                K.forEach(k => {
-                    const ki = H.findIndex(h => h.replace(/skor_/gi,'')===k.toLowerCase());
-                    r['_s'+k] = ki!==-1 ? (parseFloat(V[ki])||0) : 0;
-                });
-                
-                if(r._n) D.push(r);
+                // Helper ambil nilai
+                const val = (colIdx) => (colIdx !== -1 && V[colIdx]) ? (parseFloat(V[colIdx].replace(',','.')) || 0) : 0;
+                const str = (colIdx) => (colIdx !== -1) ? (V[colIdx] || '') : '';
+
+                const row = {
+                    _id: str(COL.id),
+                    _n: str(COL.n),
+                    _to: val(COL.to),
+                    _av: val(COL.av),
+                    _cav: val(COL.cav),
+                    // Skor
+                    _sPU: val(COL.sPU),
+                    _sPPU: val(COL.sPPU),
+                    _sPBM: val(COL.sPBM),
+                    _sPK: val(COL.sPK),
+                    _sLitInd: val(COL.sLitInd),
+                    _sLitIng: val(COL.sLitIng),
+                    _sPM: val(COL.sPM)
+                };
+
+                if(row._n) D.push(row);
             }
+            log(`Total baris: ${D.length}`);
             return D;
         }
 
         function group(D) {
             const S = {};
             D.forEach(r => {
+                if(!r._n) return;
                 const k = r._id ? r._id : `N_${r._n.toUpperCase()}`;
-                if(!S[k]) S[k] = { id: r._id||'-', name: r._n, res: [] };
-                S[k].res.push({ to: r._to, av: r._av, cav: r._cav, s: { PU: r._sPU, PPU: r._sPPU, PBM: r._sPBM, PK: r._sPK, LitInd: r._sLitInd, LitIng: r._sLitIng, PM: r._sPM }});
+                if(!S[k]) S[k] = { id: r._id || '-', name: r._n, res: [] };
+                S[k].res.push({ 
+                    to: r._to, av: r._av, cav: r._cav, 
+                    s: { PU: r._sPU, PPU: r._sPPU, PBM: r._sPBM, PK: r._sPK, LitInd: r._sLitInd, LitIng: r._sLitIng, PM: r._sPM }
+                });
             });
-            
+
             return Object.values(S).map(s => {
-                s.res.sort((a,b)=>a.to-b.to);
-                s.ov = s.res.reduce((a,b)=>a+b.av,0)/s.res.length;
+                s.res.sort((a, b) => a.to - b.to);
+                s.ov = s.res.reduce((a, b) => a + b.av, 0) / s.res.length;
                 return s;
             });
         }
 
-        // == LOAD DATA (DENGAN PROXY) ==
+        // == LOAD ==
         async function load() {
-            $('status').classList.remove('hidden');
-            $('log').innerHTML = '';
+            $('status').classList.remove('hidden'); $('log').innerHTML = '';
             $('btnLoad').disabled = true;
-            
-            let rawData = '';
-            
-            // Coba Proxy satu per satu
-            for(let i=0; i<PROXIES.length; i++) {
-                const pUrl = PROXIES[i](CSV_URL);
-                log(`Mencoba Proxy ${i+1}...`);
+            let raw = '';
+
+            for (let i = 0; i < PROXIES.length; i++) {
+                log(`Mencoba Proxy ${i + 1}...`);
                 try {
-                    const r = await fetch(pUrl);
-                    if(!r.ok) throw new Error("Gagal");
-                    rawData = await r.text();
-                    log(`-> Sukses memuat via Proxy ${i+1}.`);
-                    break; // Berhenti kalau sukses
-                } catch (e) {
-                    log(`-> Gagal.`, true);
-                }
+                    const r = await fetch(PROXIES[i](CSV_URL));
+                    if (!r.ok) throw new Error("Gagal");
+                    raw = await r.text();
+                    log(`-> Sukses via Proxy ${i + 1}.`);
+                    break;
+                } catch (e) { log(`-> Gagal.`, true); }
             }
 
-            if(!rawData) {
-                log("ERROR: Tidak bisa ambil data. Cek koneksi internet.", true);
-                $('btnLoad').disabled = false;
-                return;
-            }
+            if (!raw) { log("ERROR: Gagal ambil data.", true); $('btnLoad').disabled = false; return; }
 
             try {
-                log("Parsing data...");
-                const parsed = parse(rawData);
-                DB = group(parsed);
-                DB.sort((a,b)=>b.ov-a.ov);
-                log(`Sukses! Total ${DB.length} siswa.`);
+                log("Parsing...");
+                const P = parse(raw);
+                DB = group(P);
+                DB.sort((a, b) => b.ov - a.ov);
+                log(`<b style='color:green'>SIAP! ${DB.length} siswa ditemukan.</b>`);
                 $('login').classList.add('hidden');
                 $('dash').classList.remove('hidden');
-                renderSearch();
-            } catch(e) {
-                log("ERROR PARSE: "+e.message, true);
+                askName();
+            } catch (e) {
+                log("PARSE ERROR: " + e.message, true);
             } finally {
                 $('btnLoad').disabled = false;
             }
         }
 
-        // == DASHBOARD ==
-        function renderSearch() {
-            const q = prompt("Masukkan Nama atau No Peserta:");
-            if(!q) return;
-            
+        function askName() {
+            const q = prompt("Masukkan Nama / No Peserta:");
+            if (!q) return;
             const m = DB.filter(s => s.name.toLowerCase().includes(q.toLowerCase()) || s.id.includes(q));
-            if(m.length===0) { alert("Tidak ditemukan."); renderSearch(); return; }
-            
-            // Jika banyak, ambil yang pertama atau buat pilihan sederhana
-            CURR = m[0]; // Ambil hasil pertama
-            renderDash();
+            if (!m.length) { alert("Tidak ditemukan."); askName(); return; }
+            CURR = m[0];
+            render();
         }
 
-        function renderDash() {
-            const h = new Date().getHours();
-            $('greet').textContent = `${h<12?'Pagi':h<15?'Siang':h<18?'Sore':'Malam'}, Orang Tua/Wali`;
+        function render() {
+            $('greet').textContent = `Selamat Datang`;
             $('sub').textContent = `Untuk ${CURR.name}`;
             $('sName').textContent = CURR.name;
             $('sId').textContent = CURR.id;
             $('sCount').textContent = `${CURR.res.length} TO`;
 
-            const last = CURR.res[CURR.res.length-1];
+            const last = CURR.res[CURR.res.length - 1];
             $('cAvg').textContent = Math.round(CURR.ov);
             $('cLast').textContent = Math.round(last.av);
 
-            // Best/Weak
-            let b={k:'',v:0}, w={k:'',v:999};
+            // Best/Weak Calculation
+            let b = { k: '', v: 0 }, w = { k: '', v: 999 };
             K.forEach(k => {
-                const av = CURR.res.reduce((a,r)=>a+r.s[k],0)/CURR.res.length;
-                if(av>b.v){b.k=k;b.v=av;}
-                if(av<w.v){w.k=k;w.v=av;}
+                const avg = CURR.res.reduce((a, r) => a + r.s[k], 0) / CURR.res.length;
+                if (avg > b.v) { b.k = k; b.v = avg; }
+                if (avg < w.v) { w.k = k; w.v = avg; }
             });
             $('cBest').textContent = b.k; $('cBestVal').textContent = Math.round(b.v);
             $('cWeak').textContent = w.k; $('cWeakVal').textContent = Math.round(w.v);
 
             // Ranking
-            const rnk = DB.findIndex(s=>s.id===CURR.id)+1;
+            const rnk = DB.findIndex(s => s.id === CURR.id) + 1;
             const tot = DB.length;
-            const pct = ((tot-rnk+1)/tot*100).toFixed(0);
-            const cAvg = DB.reduce((a,s)=>a+s.ov,0)/tot;
+            const pct = ((tot - rnk + 1) / tot * 100).toFixed(0);
+            const cAvg = DB.reduce((a, s) => a + s.ov, 0) / tot;
 
-            $('mark').style.left = pct+'%';
+            $('mark').style.left = pct + '%';
             $('pRank').textContent = rnk;
             $('pTot').textContent = tot;
             $('pAvg').textContent = Math.round(cAvg);
             $('pDiff').textContent = (CURR.ov - cAvg).toFixed(0);
 
             // Charts
-            if(cLine) cLine.destroy();
-            if(cRadar) cRadar.destroy();
-            
+            if (cLine) cLine.destroy();
+            if (cRadar) cRadar.destroy();
+
             cLine = new Chart($('cLine'), {
                 type: 'line',
                 data: {
-                    labels: CURR.res.map(r=>`TO ${r.to}`),
+                    labels: CURR.res.map(r => `TO ${r.to}`),
                     datasets: [
-                        { label: 'Siswa', data: CURR.res.map(r=>r.av), borderColor: '#0D7377', tension:0.3 },
-                        { label: 'Angkatan', data: CURR.res.map(r=>r.cav), borderColor: '#D97706', borderDash: [5,5] }
+                        { label: 'Siswa', data: CURR.res.map(r => r.av), borderColor: '#0D7377', tension: 0.3 },
+                        { label: 'Angkatan', data: CURR.res.map(r => r.cav), borderColor: '#D97706', borderDash: [5, 5] }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                options: { responsive: true, maintainAspectRatio: false }
             });
 
-            const aS = K.map(k => CURR.res.reduce((a,r)=>a+r.s[k],0)/CURR.res.length);
+            const aS = K.map(k => CURR.res.reduce((a, r) => a + r.s[k], 0) / CURR.res.length);
             cRadar = new Chart($('cRadar'), {
                 type: 'radar',
                 data: { labels: K, datasets: [{ data: aS, borderColor: '#0D7377', backgroundColor: 'rgba(13,115,119,0.2)' }] },
@@ -316,26 +323,28 @@
             $('tBody').innerHTML = CURR.res.map(r => `
                 <tr>
                     <td>TO ${r.to}</td>
-                    <td>${Math.round(r.s.PU)}</td><td>${Math.round(r.s.PPU)}</td><td>${Math.round(r.s.PBM)}</td>
-                    <td>${Math.round(r.s.PK)}</td><td>${Math.round(r.s.LitInd)}</td><td>${Math.round(r.s.LitIng)}</td>
+                    <td>${Math.round(r.s.PU)}</td>
+                    <td>${Math.round(r.s.PPU)}</td>
+                    <td>${Math.round(r.s.PBM)}</td>
+                    <td>${Math.round(r.s.PK)}</td>
+                    <td>${Math.round(r.s.LitInd)}</td>
+                    <td>${Math.round(r.s.LitIng)}</td>
                     <td>${Math.round(r.s.PM)}</td>
                     <td class="font-bold text-[var(--accent)]">${Math.round(r.av)}</td>
                 </tr>
             `).join('');
         }
 
-        // == PDF ==
         function pdf() {
             document.body.classList.add('pdf-mode');
-            if(cLine) cLine.resize();
-            if(cRadar) cRadar.resize();
-            setTimeout(()=>{
-                html2pdf().set({margin:0, filename:`TO_${CURR.name}.pdf`, html2canvas:{scale:2,windowWidth:800}, jsPDF:{unit:'mm',format:[210,330]}})
-                .from($('content')).save().then(()=>document.body.classList.remove('pdf-mode'));
+            if (cLine) cLine.resize();
+            if (cRadar) cRadar.resize();
+            setTimeout(() => {
+                html2pdf().set({ margin: 0, filename: `TO_${CURR.name}.pdf`, html2canvas: { scale: 2, windowWidth: 800 }, jsPDF: { unit: 'mm', format: [210, 330] } })
+                    .from($('content')).save().then(() => document.body.classList.remove('pdf-mode'));
             }, 500);
         }
 
-        // == INIT ==
         $('btnLoad').onclick = load;
         $('btnBack').onclick = () => { $('dash').classList.add('hidden'); $('login').classList.remove('hidden'); };
         $('btnPdf').onclick = pdf;
