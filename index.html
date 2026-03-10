@@ -3,192 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Pemantauan Try Out UTBK</title>
+    <title>Dashboard Try Out UTBK</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fraunces:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Fraunces:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #FAF7F2;
-            --bg-secondary: #F3EDE4;
-            --fg: #2D2A26;
-            --fg-muted: #6B6560;
-            --accent: #0D7377;
-            --accent-light: #14919B;
-            --accent-glow: rgba(13, 115, 119, 0.15);
-            --success: #2E8B57;
-            --warning: #D97706;
-            --card: #FFFFFF;
-            --border: #E5DFD5;
-            --highlight: #E8F4F4;
+            --bg: #FAF7F2; --bg-sec: #F3EDE4; --fg: #2D2A26; --muted: #6B6560;
+            --accent: #0D7377; --accent-l: #14919B; --success: #2E8B57; --warn: #D97706;
+            --card: #FFF; --border: #E5DFD5; --hl: #E8F4F4;
         }
-
         * { box-sizing: border-box; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--fg); min-height: 100vh; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--fg); }
         .font-display { font-family: 'Fraunces', serif; }
-        .bg-pattern { background-image: radial-gradient(ellipse 80% 50% at 20% -20%, rgba(13, 115, 119, 0.08), transparent), radial-gradient(ellipse 60% 40% at 80% 100%, rgba(46, 139, 87, 0.06), transparent); }
-
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-        .animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
-        .animate-float { animation: float 3s ease-in-out infinite; }
-        .stagger-1 { animation-delay: 0.1s; opacity: 0; } .stagger-2 { animation-delay: 0.2s; opacity: 0; } .stagger-3 { animation-delay: 0.3s; opacity: 0; }
-
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 1px 3px rgba(45, 42, 38, 0.04), 0 4px 12px rgba(45, 42, 38, 0.03); }
-        .btn-primary { background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%); color: white; font-weight: 600; padding: 14px 32px; border-radius: 12px; border: none; cursor: pointer; }
-        .btn-secondary { background: white; color: var(--accent); font-weight: 600; padding: 10px 20px; border-radius: 10px; border: 2px solid var(--accent); cursor: pointer; }
-        .input-search { background: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 16px 20px 16px 52px; font-size: 1.05rem; width: 100%; }
-        .input-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); }
-
-        .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .data-table th { background: var(--bg-secondary); padding: 12px; text-align: left; font-weight: 600; font-size: 0.8rem; color: var(--fg-muted); text-transform: uppercase; border-bottom: 2px solid var(--border); }
-        .data-table td { padding: 12px; border-bottom: 1px solid var(--border); }
-
-        .scroll-container { overflow-x: auto; }
-        .search-results { position: absolute; top: 100%; left: 0; right: 0; background: var(--card); border: 2px solid var(--border); border-top: none; border-radius: 0 0 12px 12px; max-height: 300px; overflow-y: auto; z-index: 100; }
-        .search-result-item { padding: 14px 20px; cursor: pointer; border-bottom: 1px solid var(--border); }
-        .search-result-item:hover { background: var(--highlight); }
-
-        .motivational-msg { background: linear-gradient(135deg, var(--highlight) 0%, rgba(46, 139, 87, 0.08) 100%); border-left: 4px solid var(--success); border-radius: 8px; padding: 16px; }
-        .chart-container { position: relative; height: 300px; width: 100%; }
-        .percentile-indicator { position: relative; height: 24px; background: linear-gradient(90deg, #DC3545 0%, #D97706 25%, #F59E0B 50%, #2E8B57 75%, #0D7377 100%); border-radius: 12px; }
-        .percentile-marker { position: absolute; top: -4px; width: 4px; height: 32px; background: white; border-radius: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); transform: translateX(-50%); }
-
-        .greeting-banner { background: linear-gradient(135deg, #0D7377 0%, #14919B 50%, #2E8B57 100%); border-radius: 20px; position: relative; overflow: hidden; }
-
-        /* PDF Mode */
-        body.pdf-mode { background: white !important; width: 210mm !important; margin: 0 auto !important; }
-        body.pdf-mode .bg-pattern, body.pdf-mode #searchSection, body.pdf-mode .btn-primary, body.pdf-mode .btn-secondary, body.pdf-mode #motivationalBanner { display: none !important; }
-        body.pdf-mode #dashboardSection { display: block !important; padding: 0 !important; }
-        body.pdf-mode #pdfContent { width: 100% !important; padding: 10mm !important; overflow: visible !important; }
-        body.pdf-mode .scroll-container { overflow: visible !important; }
-        body.pdf-mode .card { box-shadow: none !important; border: 1px solid #ccc !important; page-break-inside: avoid; }
-        body.pdf-mode .greeting-banner { background: #0D7377 !important; padding: 10px !important; }
-        body.pdf-mode .grid.grid-cols-2.lg\:grid-cols-4 { grid-template-columns: 1fr 1fr !important; }
-        body.pdf-mode .grid.grid-cols-1.lg\:grid-cols-2 { display: block !important; }
-        body.pdf-mode .chart-container { height: 180px !important; page-break-inside: avoid; }
+        
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+        .btn { background: linear-gradient(135deg, var(--accent), var(--accent-l)); color: white; font-weight: 600; padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; }
+        .btn-sec { background: white; color: var(--accent); border: 2px solid var(--accent); background: transparent; }
+        
+        .tbl { width: 100%; border-collapse: collapse; }
+        .tbl th { background: var(--bg-sec); padding: 8px; text-align: left; font-size: 0.75rem; text-transform: uppercase; color: var(--muted); }
+        .tbl td { padding: 8px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        
+        .chart-box { height: 250px; position: relative; }
+        
+        /* PDF Fixes */
+        .pdf-mode { background: white !important; width: 210mm; margin: 0 auto; }
+        .pdf-mode .no-print { display: none !important; }
+        .pdf-mode .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+        .pdf-mode .chart-box { height: 150px; }
     </style>
 </head>
-<body class="bg-pattern">
-    <!-- Search Section -->
-    <section id="searchSection" class="min-h-screen flex items-center justify-center px-4 py-12">
-        <div class="w-full max-w-xl">
-            <div class="text-center mb-10 animate-fade-in-up">
-                <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-[#0D7377] to-[#14919B] mb-6 animate-float">
-                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                    </svg>
-                </div>
-                <h1 class="font-display text-3xl md:text-4xl font-bold text-[#2D2A26] mb-3">Pemantauan Try Out UTBK</h1>
-            </div>
+<body class="p-4 md:p-8">
 
-            <div class="animate-fade-in-up stagger-1">
-                <div class="card p-6 md:p-8">
-                    <div class="relative">
-                        <label class="block text-sm font-semibold text-[#2D2A26] mb-3">Cari Siswa</label>
-                        <div class="relative">
-                            <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B6560]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                            <input type="text" id="searchInput" class="input-search" placeholder="Ketik nama atau nomor peserta..." autocomplete="off">
-                            <div id="searchResults" class="search-results hidden"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-8 text-center animate-fade-in-up stagger-2">
-                <button id="btnLoadData" class="btn-primary inline-flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                    <span>Muat Data</span>
-                </button>
-                <div id="loadStatus" class="mt-4 text-sm text-[#6B6560] text-left bg-white p-4 rounded-lg border border-gray-200 hidden">
-                    <p class="font-bold text-xs uppercase text-gray-400 mb-2">Log Proses:</p>
-                    <div id="logContent" class="text-xs font-mono whitespace-pre-wrap"></div>
-                </div>
-            </div>
+    <!-- Halaman Login/Cari -->
+    <section id="login" class="max-w-md mx-auto text-center py-20">
+        <div class="animate-bounce mb-6 text-6xl">📊</div>
+        <h1 class="font-display text-3xl font-bold mb-2">Pemantauan Try Out</h1>
+        <p class="text-[var(--muted)] mb-8">Tekan tombol di bawah untuk memuat data.</p>
+        
+        <button id="btnLoad" class="btn w-full mb-4">Muat Data Siswa</button>
+        
+        <div id="status" class="text-left text-xs bg-white p-4 rounded border hidden">
+            <b class="text-gray-400 block mb-2">LOG:</b>
+            <div id="log" class="font-mono space-y-1"></div>
         </div>
     </section>
 
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-[#FAF7F2]/95 flex items-center justify-center z-50 hidden">
-        <div class="text-center">
-            <div class="w-16 h-16 border-4 border-[#E5DFD5] border-t-[#0D7377] rounded-full animate-spin mx-auto mb-4"></div>
-            <p class="text-[#6B6560] font-medium">Memuat data...</p>
-        </div>
-    </div>
-
-    <!-- Dashboard Section -->
-    <section id="dashboardSection" class="hidden px-4 py-8">
-        <div class="max-w-6xl mx-auto" id="pdfContent">
-            <!-- Greeting -->
-            <div class="greeting-banner p-6 md:p-8 mb-8 animate-fade-in-up text-white relative z-10">
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-                    </div>
+    <!-- Halaman Dashboard -->
+    <section id="dash" class="hidden max-w-5xl mx-auto">
+        <div id="content">
+            <!-- Header -->
+            <div class="bg-[var(--accent)] text-white p-6 rounded-xl mb-6 relative overflow-hidden">
+                <div class="relative z-10 flex justify-between items-start">
                     <div>
-                        <h1 class="font-display text-2xl font-bold" id="greetingText">Selamat Datang</h1>
-                        <p class="opacity-80" id="greetingSubtext">Info siswa...</p>
+                        <h1 class="font-display text-2xl md:text-3xl font-bold" id="greet">Selamat Datang</h1>
+                        <p class="opacity-80 text-sm" id="sub">Memuat...</p>
+                    </div>
+                    <div class="flex gap-2 no-print">
+                        <button id="btnBack" class="px-3 py-1 border border-white/50 rounded text-sm hover:bg-white/20">Keluar</button>
+                        <button id="btnPdf" class="px-3 py-1 bg-white text-[var(--accent)] rounded text-sm font-bold">PDF</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Header -->
-            <header class="mb-6 flex justify-between items-center">
-                <button id="btnBack" class="text-[#0D7377] font-medium hover:underline flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                    Kembali
-                </button>
-                <div class="flex gap-2">
-                    <button id="btnPrint" class="btn-secondary text-xs py-2 px-3">Cetak</button>
-                    <button id="btnDownload" class="btn-secondary text-xs py-2 px-3" style="background: #0D7377; color: white; border-color: #0D7377;">PDF</button>
+            <!-- Info Siswa -->
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-bold" id="sName">-</h2>
+                    <p class="text-sm text-[var(--muted)]">ID: <span id="sId">-</span></p>
                 </div>
-            </header>
-
-            <!-- Profile -->
-            <div class="mb-6">
-                <h2 class="font-display text-2xl font-bold text-[#2D2A26]" id="studentNameDisplay">Nama Siswa</h2>
-                <p class="text-[#6B6560]">No. Peserta: <span id="studentIdDisplay" class="font-medium text-[#2D2A26]">-</span></p>
-                <span class="px-2 py-1 bg-[#F3EDE4] rounded text-xs font-medium text-[#6B6560]" id="totalTOCount">0 TO</span>
+                <span class="bg-[var(--bg-sec)] px-3 py-1 rounded-full text-xs font-bold" id="sCount">0 TO</span>
             </div>
 
             <!-- Cards -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div class="card p-4"><p class="text-xs text-gray-500">Rata2 Keseluruhan</p><p id="overallAvgValue" class="text-2xl font-bold font-display">-</p></div>
-                <div class="card p-4"><p class="text-xs text-gray-500">Rata2 TO Terakhir</p><p id="avgScoreValue" class="text-2xl font-bold font-display">-</p></div>
-                <div class="card p-4"><p class="text-xs text-gray-500">Subtes Terkuat</p><p id="strongestSubject" class="font-bold truncate">-</p><p id="strongestScore" class="text-lg font-bold text-green-600">-</p></div>
-                <div class="card p-4"><p class="text-xs text-gray-500">Perlu Latihan</p><p id="weakestSubject" class="font-bold truncate">-</p><p id="weakestScore" class="text-lg font-bold text-orange-500">-</p></div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <div class="card p-4"><p class="text-xs text-[var(--muted)]">Rata2 Keseluruhan</p><p class="text-2xl font-bold" id="cAvg">-</p></div>
+                <div class="card p-4"><p class="text-xs text-[var(--muted)]">Rata2 TO Terakhir</p><p class="text-2xl font-bold" id="cLast">-</p></div>
+                <div class="card p-4"><p class="text-xs text-[var(--muted)]">Subtes Terbaik</p><p class="font-bold" id="cBest">-</p><p class="text-lg font-bold text-[var(--success)]" id="cBestVal">-</p></div>
+                <div class="card p-4"><p class="text-xs text-[var(--muted)]">Perlu Latihan</p><p class="font-bold" id="cWeak">-</p><p class="text-lg font-bold text-[var(--warn)]" id="cWeakVal">-</p></div>
             </div>
 
-            <!-- Stats -->
-            <div class="card p-6 mb-8">
-                <h3 class="font-bold mb-4">Posisi Angkatan</h3>
-                <div class="percentile-indicator mb-2"><div id="percentileMarker" class="percentile-marker" style="left:50%"></div></div>
-                <div class="flex justify-between text-xs text-gray-500 mb-6"><span>Rendah</span><span>Sedang</span><span>Tinggi</span></div>
+            <!-- Statistik -->
+            <div class="card p-4 mb-6">
+                <h3 class="font-bold mb-2">Posisi Angkatan</h3>
+                <div class="h-3 rounded bg-gradient-to-r from-red-500 via-yellow-500 to-green-600 mb-1"><div id="mark" class="w-1 h-5 bg-white -mt-1 rounded shadow relative" style="left:50%"></div></div>
+                <div class="flex justify-between text-xs mb-4"><span>Rendah</span><span>Sedang</span><span>Tinggi</span></div>
                 <div class="grid grid-cols-4 gap-2 text-center">
-                    <div class="p-2 bg-gray-50 rounded"><p class="text-xs text-gray-500">Rank</p><p id="rankValue" class="font-bold">-</p></div>
-                    <div class="p-2 bg-gray-50 rounded"><p class="text-xs text-gray-500">Total</p><p id="totalStudents" class="font-bold">-</p></div>
-                    <div class="p-2 bg-gray-50 rounded"><p class="text-xs text-gray-500">Rataan</p><p id="classAvgOverall" class="font-bold">-</p></div>
-                    <div class="p-2 bg-gray-50 rounded"><p class="text-xs text-gray-500">Selisih</p><p id="diffFromClass" class="font-bold">-</p></div>
+                    <div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-500">Rank</p><p class="font-bold" id="pRank">-</p></div>
+                    <div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-500">Total</p><p class="font-bold" id="pTot">-</p></div>
+                    <div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-500">Rataan</p><p class="font-bold" id="pAvg">-</p></div>
+                    <div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-500">Selisih</p><p class="font-bold" id="pDiff">-</p></div>
                 </div>
             </div>
 
             <!-- Charts -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <div class="card p-4"><h3 class="font-bold mb-2 text-sm">Perkembangan</h3><div class="chart-container"><canvas id="lineChart"></canvas></div></div>
-                <div class="card p-4"><h3 class="font-bold mb-2 text-sm">Profil</h3><div class="chart-container"><canvas id="radarChart"></canvas></div></div>
+            <div class="grid md:grid-cols-2 gap-4 mb-6">
+                <div class="card p-4"><h3 class="font-bold mb-2 text-sm">Perkembangan</h3><div class="chart-box"><canvas id="cLine"></canvas></div></div>
+                <div class="card p-4"><h3 class="font-bold mb-2 text-sm">Profil</h3><div class="chart-box"><canvas id="cRadar"></canvas></div></div>
             </div>
 
             <!-- Table -->
-            <div class="card overflow-hidden">
-                <div class="p-4 border-b"><h3 class="font-bold">Riwayat</h3></div>
-                <div class="scroll-container">
-                    <table class="data-table text-sm">
-                        <thead><tr><th>TO</th><th>PU</th><th>PPU</th><th>PBM</th><th>PK</th><th>LitInd</th><th>LitIng</th><th>PM</th><th>Rata2</th></tr></thead>
-                        <tbody id="historyTableBody"></tbody>
+            <div class="card p-4">
+                <h3 class="font-bold mb-2">Riwayat Nilai</h3>
+                <div class="overflow-x-auto">
+                    <table class="tbl">
+                        <thead><tr><th>TO</th><th>PU</th><th>PPU</th><th>PBM</th><th>PK</th><th>LInd</th><th>LI</th><th>PM</th><th>Rata2</th></tr></thead>
+                        <tbody id="tBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -196,249 +118,228 @@
     </section>
 
     <script>
-        // =====================================================
-        // KONFIGURASI
-        // =====================================================
-        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkELVG1kzMO7l-FyObUwG2y8En19INkNGGfXKsIlx9br8MiOe7IfAcj2ng1GrLVhy1sAqquDSKIxKD/pub?output=csv';
-
-        let allStudentsData = [], currentStudentData = null, lineChart = null, radarChart = null;
-        let COLS = { NAME: null, ID: null, TO: null, SCORE_AVG: null, CLASS_AVG: null };
-        const SUB_TESTS = ['PU', 'PPU', 'PBM', 'PK', 'LitInd', 'LitIng', 'PM'];
+        // == KONFIGURASI ==
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkELVG1kzMO7l-FyObUwG2y8En19INkNGGfXKsIlx9br8MiOe7IfAcj2ng1GrLVhy1sAqquDSKIxKD/pub?output=csv';
         
-        const el = (id) => document.getElementById(id);
-        const log = (m, err = false) => {
-            console.log(m);
-            const lc = el('logContent');
-            if(lc) lc.innerHTML += `<div style="color:${err?'red':'black'}">${m}</div>`;
-            el('loadStatus').classList.remove('hidden');
+        // Daftar Proxy (Jika 1 gagal, coba yang lain)
+        const PROXIES = [
+            (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+            (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`
+        ];
+
+        let DB = [], CURR = null, cLine = null, cRadar = null;
+        const K = ['PU','PPU','PBM','PK','LitInd','LitIng','PM'];
+
+        const $ = (id) => document.getElementById(id);
+        const log = (m, e = false) => { 
+            console.log(m); 
+            const el = $('log'); 
+            if(el) el.innerHTML += `<div style="color:${e?'red':'black'}">${m}</div>`; 
+            $('status').classList.remove('hidden');
         };
 
-        // =====================================================
-        // SMART CSV PARSER
-        // =====================================================
-        function parseCSV(text) {
-            log("2. Parsing data...");
-            const lines = text.split(/\r?\n/);
-            if(lines.length < 2) throw new Error("CSV kosong");
+        // == PARSER ==
+        function parse(t) {
+            const L = t.split(/\r?\n/);
+            if(L.length < 2) throw new Error("Data kosong");
             
-            const split = (line) => {
-                let res=[], cur='', q=false;
-                for(let c of line) {
-                    if(c==='"') q=!q;
-                    else if(c===','&&!q) { res.push(cur.trim()); cur=''; }
-                    else cur+=c;
+            // Split cerdas
+            const split = l => {
+                let r=[], c='', q=false;
+                for(let ch of l) {
+                    if(ch=='"') q=!q;
+                    else if(ch==','&&!q) { r.push(c.trim()); c=''; } else c+=ch;
                 }
-                res.push(cur.trim());
-                return res;
+                r.push(c.trim());
+                return r;
             };
 
-            const headers = split(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
-            log(`Headers: ${headers.join(', ')}`);
-
-            // Detect columns
-            COLS.NAME = headers.find(h => /nama/i.test(h) && !/peserta/i.test(h));
-            COLS.ID = headers.find(h => /no|id|peserta/i.test(h));
-            COLS.TO = headers.find(h => /^to$/i.test(h));
-            COLS.SCORE_AVG = headers.find(h => /rata/i.test(h) && /skor/i.test(h) && !/tiap/i.test(h));
-            COLS.CLASS_AVG = headers.find(h => /rerata|tiap/i.test(h));
-
-            if(!COLS.NAME) throw new Error("Kolom Nama hilang");
-            if(!COLS.TO) throw new Error("Kolom TO hilang");
-
-            const data = [];
-            for(let i=1; i<lines.length; i++) {
-                if(!lines[i].trim()) continue;
-                const vals = split(lines[i]);
-                const row = {};
-                headers.forEach((h, idx) => {
-                    let k = h;
-                    if(h===COLS.NAME) k='_N';
-                    if(h===COLS.ID) k='_ID';
-                    if(h===COLS.TO) k='_TO';
-                    if(h===COLS.SCORE_AVG) k='_AVG';
-                    if(h===COLS.CLASS_AVG) k='_C_AVG';
-                    const m = h.match(/Skor[_\s](\w+)/i);
-                    if(m) k=`_S_${m[1].toUpperCase()}`;
-                    
-                    row[k] = vals[idx]||'';
-                    if(k.startsWith('_S')||k==='_AVG'||k==='_C_AVG'||k==='_TO') row[k] = parseFloat(String(row[k]).replace(',','.'))||0;
+            const H = split(L[0]).map(h=>h.replace(/"/g,'').trim().toLowerCase());
+            const idx = { n: H.findIndex(h=>h.includes('nama')&&!h.includes('peserta')), id: H.findIndex(h=>h.includes('no')||h.includes('peserta')), to: H.findIndex(h=>h=='to'), av: H.findIndex(h=>h.includes('rata')&&h.includes('skor')&&!h.includes('tiap')), cav: H.findIndex(h=>h.includes('rerata')||h.includes('tiap')) };
+            
+            if(idx.n==-1||idx.to==-1) throw new Error("Format kolom salah. Cek 'Nama' & 'TO'");
+            
+            const D = [];
+            for(let i=1; i<L.length; i++) {
+                if(!L[i].trim()) continue;
+                const V = split(L[i]);
+                const r = {};
+                // Data dasar
+                r._n = V[idx.n]||'';
+                r._id = V[idx.id]||'';
+                r._to = parseFloat(V[idx.to])||0;
+                r._av = parseFloat(V[idx.av])||0;
+                r._cav = parseFloat(V[idx.cav])||0;
+                
+                // Skor
+                K.forEach(k => {
+                    const ki = H.findIndex(h => h.replace(/skor_/gi,'')===k.toLowerCase());
+                    r['_s'+k] = ki!==-1 ? (parseFloat(V[ki])||0) : 0;
                 });
-                if(row['_N']) data.push(row);
+                
+                if(r._n) D.push(r);
             }
-            log(`3. Data mentah: ${data.length} baris`);
-            return data;
+            return D;
         }
 
-        function group(data) {
-            const s = {};
-            data.forEach(r => {
-                const nm = r['_N'], id = r['_ID']||'NO_ID', to = r['_TO'];
-                if(!nm) return;
-                const key = (id!=='NO_ID'&&id!=='#N/A')?id:`NM_${nm.toUpperCase()}`;
-                if(!s[key]) s[key]={id:id!=='NO_ID'?id:'-', name:nm, results:[]};
-                s[key].results.push({
-                    TO:to, avg:r['_AVG']||0, classAvg:r['_C_AVG']||0,
-                    scores: { PU:r['_S_PU']||0, PPU:r['_S_PPU']||0, PBM:r['_S_PBM']||0, PK:r['_S_PK']||0, LitInd:r['_S_LITIND']||0, LitIng:r['_S_LITING']||0, PM:r['_S_PM']||0 }
-                });
+        function group(D) {
+            const S = {};
+            D.forEach(r => {
+                const k = r._id ? r._id : `N_${r._n.toUpperCase()}`;
+                if(!S[k]) S[k] = { id: r._id||'-', name: r._n, res: [] };
+                S[k].res.push({ to: r._to, av: r._av, cav: r._cav, s: { PU: r._sPU, PPU: r._sPPU, PBM: r._sPBM, PK: r._sPK, LitInd: r._sLitInd, LitIng: r._sLitIng, PM: r._sPM }});
             });
-            const res = Object.values(s);
-            res.forEach(x => {
-                x.results.sort((a,b)=>a.TO-b.TO);
-                x.overall = x.results.reduce((a,b)=>a+b.avg,0)/x.results.length;
+            
+            return Object.values(S).map(s => {
+                s.res.sort((a,b)=>a.to-b.to);
+                s.ov = s.res.reduce((a,b)=>a+b.av,0)/s.res.length;
+                return s;
             });
-            log(`4. Siswa unik: ${res.length}`);
-            return res;
         }
 
-        // =====================================================
-        // HYBRID FETCH (Direct -> Proxy)
-        // =====================================================
+        // == LOAD DATA (DENGAN PROXY) ==
         async function load() {
-            el('loadingOverlay').classList.remove('hidden');
-            el('logContent').innerHTML='';
-            el('btnLoadData').disabled=true;
+            $('status').classList.remove('hidden');
+            $('log').innerHTML = '';
+            $('btnLoad').disabled = true;
             
-            try {
-                let text;
-                
-                // Metode 1: Langsung (Paling cepat)
+            let rawData = '';
+            
+            // Coba Proxy satu per satu
+            for(let i=0; i<PROXIES.length; i++) {
+                const pUrl = PROXIES[i](CSV_URL);
+                log(`Mencoba Proxy ${i+1}...`);
                 try {
-                    log("1.A Mencoba akses langsung...");
-                    const r = await fetch(SHEET_URL);
-                    if(!r.ok) throw new Error("Direct Fail");
-                    text = await r.text();
-                    log("-> Sukses akses langsung.");
-                } catch (e1) {
-                    log("Gagal langsung: " + e1.message, true);
-                    log("1.B Mencoba via Proxy...");
-                    
-                    // Metode 2: Proxy (Cadangan)
-                    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(SHEET_URL);
-                    const r2 = await fetch(proxyUrl);
-                    if(!r2.ok) throw new Error("Proxy Fail");
-                    text = await r2.text();
-                    log("-> Sukses via proxy.");
+                    const r = await fetch(pUrl);
+                    if(!r.ok) throw new Error("Gagal");
+                    rawData = await r.text();
+                    log(`-> Sukses memuat via Proxy ${i+1}.`);
+                    break; // Berhenti kalau sukses
+                } catch (e) {
+                    log(`-> Gagal.`, true);
                 }
+            }
 
-                const parsed = parseCSV(text);
-                allStudentsData = group(parsed);
-                if(allStudentsData.length===0) throw new Error("Data kosong");
-                allStudentsData.sort((a,b)=>b.overall-a.overall);
-                
-                log("<b style='color:green'>SIAP!</b>", false);
-                el('loadStatus').style.borderColor='green';
-                
-            } catch(err) {
-                log(`<b>ERROR TOTAL: ${err.message}</b>`, true);
-                log("Cek: 1) Koneksi internet. 2) AdBlock matikan. 3) Link benar.", true);
-                el('loadStatus').style.borderColor='red';
+            if(!rawData) {
+                log("ERROR: Tidak bisa ambil data. Cek koneksi internet.", true);
+                $('btnLoad').disabled = false;
+                return;
+            }
+
+            try {
+                log("Parsing data...");
+                const parsed = parse(rawData);
+                DB = group(parsed);
+                DB.sort((a,b)=>b.ov-a.ov);
+                log(`Sukses! Total ${DB.length} siswa.`);
+                $('login').classList.add('hidden');
+                $('dash').classList.remove('hidden');
+                renderSearch();
+            } catch(e) {
+                log("ERROR PARSE: "+e.message, true);
             } finally {
-                el('loadingOverlay').classList.add('hidden');
-                el('btnLoadData').disabled=false;
+                $('btnLoad').disabled = false;
             }
         }
 
-        // =====================================================
-        // UI LOGIC
-        // =====================================================
-        function search(q) {
-            const t=q.trim().toLowerCase();
-            if(t.length<2) { el('searchResults').classList.add('hidden'); return; }
-            const m = allStudentsData.filter(s=>s.name.toLowerCase().includes(t)||s.id.toLowerCase().includes(t)).slice(0,8);
-            el('searchResults').innerHTML = m.length ? m.map(s=>`<div class="search-result-item" data-id="${s.id}" data-name="${s.name}"><p class="font-medium">${s.name}</p><p class="text-xs text-gray-500">${s.id} | ${s.results.length} TO</p></div>`).join('') : '<div class="p-4 text-gray-500 text-center">Tak ditemukan</div>';
-            el('searchResults').classList.remove('hidden');
-        }
-        
-        function select(id, name) {
-            currentStudentData = allStudentsData.find(s=>s.id===id)||allStudentsData.find(s=>s.name===name);
-            if(!currentStudentData) return;
-            el('searchResults').classList.add('hidden');
-            el('searchInput').value='';
-            showDash();
+        // == DASHBOARD ==
+        function renderSearch() {
+            const q = prompt("Masukkan Nama atau No Peserta:");
+            if(!q) return;
+            
+            const m = DB.filter(s => s.name.toLowerCase().includes(q.toLowerCase()) || s.id.includes(q));
+            if(m.length===0) { alert("Tidak ditemukan."); renderSearch(); return; }
+            
+            // Jika banyak, ambil yang pertama atau buat pilihan sederhana
+            CURR = m[0]; // Ambil hasil pertama
+            renderDash();
         }
 
-        function showDash() {
-            el('searchSection').classList.add('hidden');
-            el('dashboardSection').classList.remove('hidden');
-            
-            const h=new Date().getHours();
-            el('greetingText').textContent=`${h<12?'Pagi':h<15?'Siang':h<18?'Sore':'Malam'}, Ortu/Wali`;
-            el('greetingSubtext').textContent=`Hasil TO: ${currentStudentData.name}`;
-            el('studentNameDisplay').textContent=currentStudentData.name;
-            el('studentIdDisplay').textContent=currentStudentData.id;
-            el('totalTOCount').textContent=`${currentStudentData.results.length} TO`;
-            
-            const r=currentStudentData.results, last=r[r.length-1];
-            el('overallAvgValue').textContent=Math.round(currentStudentData.overall);
-            el('avgScoreValue').textContent=Math.round(last.avg);
-            
-            let str={n:'',v:0}, we={n:'',v:999};
-            SUB_TESTS.forEach(t=>{
-                const avg=r.reduce((a,x)=>a+x.scores[t],0)/r.length;
-                if(avg>str.v){str.n=t;str.v=avg;}
-                if(avg<we.v){we.n=t;we.v=avg;}
+        function renderDash() {
+            const h = new Date().getHours();
+            $('greet').textContent = `${h<12?'Pagi':h<15?'Siang':h<18?'Sore':'Malam'}, Orang Tua/Wali`;
+            $('sub').textContent = `Untuk ${CURR.name}`;
+            $('sName').textContent = CURR.name;
+            $('sId').textContent = CURR.id;
+            $('sCount').textContent = `${CURR.res.length} TO`;
+
+            const last = CURR.res[CURR.res.length-1];
+            $('cAvg').textContent = Math.round(CURR.ov);
+            $('cLast').textContent = Math.round(last.av);
+
+            // Best/Weak
+            let b={k:'',v:0}, w={k:'',v:999};
+            K.forEach(k => {
+                const av = CURR.res.reduce((a,r)=>a+r.s[k],0)/CURR.res.length;
+                if(av>b.v){b.k=k;b.v=av;}
+                if(av<w.v){w.k=k;w.v=av;}
             });
-            el('strongestSubject').textContent=str.n;
-            el('strongestScore').textContent=Math.round(str.v);
-            el('weakestSubject').textContent=we.n;
-            el('weakestScore').textContent=Math.round(we.v);
+            $('cBest').textContent = b.k; $('cBestVal').textContent = Math.round(b.v);
+            $('cWeak').textContent = w.k; $('cWeakVal').textContent = Math.round(w.v);
 
-            const tot=allStudentsData.length;
-            const rk=allStudentsData.findIndex(s=>s.id===currentStudentData.id)+1;
-            const pct=((tot-rk+1)/tot*100).toFixed(0);
-            const cAvg=allStudentsData.reduce((a,s)=>a+s.overall,0)/tot;
+            // Ranking
+            const rnk = DB.findIndex(s=>s.id===CURR.id)+1;
+            const tot = DB.length;
+            const pct = ((tot-rnk+1)/tot*100).toFixed(0);
+            const cAvg = DB.reduce((a,s)=>a+s.ov,0)/tot;
+
+            $('mark').style.left = pct+'%';
+            $('pRank').textContent = rnk;
+            $('pTot').textContent = tot;
+            $('pAvg').textContent = Math.round(cAvg);
+            $('pDiff').textContent = (CURR.ov - cAvg).toFixed(0);
+
+            // Charts
+            if(cLine) cLine.destroy();
+            if(cRadar) cRadar.destroy();
             
-            el('percentileValue').textContent=`Top ${pct}%`;
-            el('percentileMarker').style.left=`${pct}%`;
-            el('rankValue').textContent=rk;
-            el('totalStudents').textContent=tot;
-            el('classAvgOverall').textContent=Math.round(cAvg);
-            el('diffFromClass').textContent=(currentStudentData.overall-cAvg).toFixed(0);
-            
-            drawCharts();
-            drawTable();
-            window.scrollTo(0,0);
-        }
-        
-        function drawCharts() {
-            const c1=document.getElementById('lineChart').getContext('2d');
-            const c2=document.getElementById('radarChart').getContext('2d');
-            if(lineChart)lineChart.destroy();
-            if(radarChart)radarChart.destroy();
-            
-            const lbl=currentStudentData.results.map(x=>`TO ${x.TO}`);
-            lineChart=new Chart(c1,{type:'line',data:{labels:lbl,datasets:[{label:'Siswa',data:currentStudentData.results.map(x=>x.avg),borderColor:'#0D7377',tension:0.3},{label:'Rataan',data:currentStudentData.results.map(x=>x.classAvg),borderColor:'#D97706',borderDash:[5,5]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom'}}}});
-            
-            const avgs=SUB_TESTS.map(t=>currentStudentData.results.reduce((a,x)=>a+x.scores[t],0)/currentStudentData.results.length);
-            radarChart=new Chart(c2,{type:'radar',data:{labels:SUB_TESTS,datasets:[{label:'Skor',data:avgs,borderColor:'#0D7377',backgroundColor:'rgba(13,115,119,0.2)'}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{beginAtZero:false}}}});
-        }
-        
-        function drawTable() {
-            el('historyTableBody').innerHTML=currentStudentData.results.map(r=>`<tr>
-                <td class="font-medium">TO ${r.TO}</td>
-                <td>${Math.round(r.scores.PU)}</td><td>${Math.round(r.scores.PPU)}</td><td>${Math.round(r.scores.PBM)}</td>
-                <td>${Math.round(r.scores.PK)}</td><td>${Math.round(r.scores.LitInd)}</td><td>${Math.round(r.scores.LitIng)}</td><td>${Math.round(r.scores.PM)}</td>
-                <td class="font-bold text-[#0D7377]">${Math.round(r.avg)}</td>
-            </tr>`).join('');
+            cLine = new Chart($('cLine'), {
+                type: 'line',
+                data: {
+                    labels: CURR.res.map(r=>`TO ${r.to}`),
+                    datasets: [
+                        { label: 'Siswa', data: CURR.res.map(r=>r.av), borderColor: '#0D7377', tension:0.3 },
+                        { label: 'Angkatan', data: CURR.res.map(r=>r.cav), borderColor: '#D97706', borderDash: [5,5] }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            const aS = K.map(k => CURR.res.reduce((a,r)=>a+r.s[k],0)/CURR.res.length);
+            cRadar = new Chart($('cRadar'), {
+                type: 'radar',
+                data: { labels: K, datasets: [{ data: aS, borderColor: '#0D7377', backgroundColor: 'rgba(13,115,119,0.2)' }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { r: { beginAtZero: false } } }
+            });
+
+            // Table
+            $('tBody').innerHTML = CURR.res.map(r => `
+                <tr>
+                    <td>TO ${r.to}</td>
+                    <td>${Math.round(r.s.PU)}</td><td>${Math.round(r.s.PPU)}</td><td>${Math.round(r.s.PBM)}</td>
+                    <td>${Math.round(r.s.PK)}</td><td>${Math.round(r.s.LitInd)}</td><td>${Math.round(r.s.LitIng)}</td>
+                    <td>${Math.round(r.s.PM)}</td>
+                    <td class="font-bold text-[var(--accent)]">${Math.round(r.av)}</td>
+                </tr>
+            `).join('');
         }
 
-        async function pdf() {
+        // == PDF ==
+        function pdf() {
             document.body.classList.add('pdf-mode');
-            if(lineChart)lineChart.resize();
-            if(radarChart)radarChart.resize();
-            await new Promise(r=>setTimeout(r,600));
-            html2pdf().set({margin:0,filename:`TO_${currentStudentData.name}.pdf`,html2canvas:{scale:2,windowWidth:800},jsPDF:{unit:'mm',format:[210,330]}}).from(el('pdfContent')).save().then(()=>document.body.classList.remove('pdf-mode'));
+            if(cLine) cLine.resize();
+            if(cRadar) cRadar.resize();
+            setTimeout(()=>{
+                html2pdf().set({margin:0, filename:`TO_${CURR.name}.pdf`, html2canvas:{scale:2,windowWidth:800}, jsPDF:{unit:'mm',format:[210,330]}})
+                .from($('content')).save().then(()=>document.body.classList.remove('pdf-mode'));
+            }, 500);
         }
 
-        // Init
-        document.addEventListener('DOMContentLoaded',()=>{
-            el('btnLoadData').onclick=load;
-            el('searchInput').oninput=e=>search(e.target.value);
-            el('searchResults').onclick=e=>{const i=e.target.closest('.search-result-item'); if(i)select(i.dataset.id,i.dataset.name)};
-            el('btnBack').onclick=()=>{el('dashboardSection').classList.add('hidden');el('searchSection').classList.remove('hidden');};
-            el('btnPrint').onclick=()=>window.print();
-            el('btnDownload').onclick=pdf;
-        });
+        // == INIT ==
+        $('btnLoad').onclick = load;
+        $('btnBack').onclick = () => { $('dash').classList.add('hidden'); $('login').classList.remove('hidden'); };
+        $('btnPdf').onclick = pdf;
+
     </script>
 </body>
 </html>
