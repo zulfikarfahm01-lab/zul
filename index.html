@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pemantauan Try Out UTBK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fraunces:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #FAF7F2;
+            --bg-secondary: #F3EDE4;
+            --fg: #2D2A26;
+            --fg-muted: #6B6560;
+            --accent: #0D7377;
+            --accent-light: #14919B;
+            --accent-glow: rgba(13, 115, 119, 0.15);
+            --success: #2E8B57;
+            --warning: #D97706;
+            --card: #FFFFFF;
+            --border: #E5DFD5;
+            --highlight: #E8F4F4;
+        }
+
+        * { box-sizing: border-box; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--fg); min-height: 100vh; }
+        .font-display { font-family: 'Fraunces', serif; }
+        .bg-pattern { background-image: radial-gradient(ellipse 80% 50% at 20% -20%, rgba(13, 115, 119, 0.08), transparent), radial-gradient(ellipse 60% 40% at 80% 100%, rgba(46, 139, 87, 0.06), transparent); }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        .stagger-1 { animation-delay: 0.1s; opacity: 0; } .stagger-2 { animation-delay: 0.2s; opacity: 0; } .stagger-3 { animation-delay: 0.3s; opacity: 0; }
+
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 1px 3px rgba(45, 42, 38, 0.04), 0 4px 12px rgba(45, 42, 38, 0.03); }
+        .btn-primary { background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%); color: white; font-weight: 600; padding: 14px 32px; border-radius: 12px; border: none; cursor: pointer; }
+        .btn-secondary { background: white; color: var(--accent); font-weight: 600; padding: 10px 20px; border-radius: 10px; border: 2px solid var(--accent); cursor: pointer; }
+        .input-search { background: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 16px 20px 16px 52px; font-size: 1.05rem; width: 100%; }
+        .input-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); }
+
+        .score-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 56px; padding: 4px 12px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; }
+        .score-high { background: rgba(46, 139, 87, 0.12); color: var(--success); }
+        .score-mid { background: rgba(217, 119, 6, 0.12); color: var(--warning); }
+
+        .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .data-table th { background: var(--bg-secondary); padding: 12px; text-align: left; font-weight: 600; font-size: 0.8rem; color: var(--fg-muted); text-transform: uppercase; border-bottom: 2px solid var(--border); }
+        .data-table td { padding: 12px; border-bottom: 1px solid var(--border); }
+
+        .scroll-container { overflow-x: auto; }
+        .search-results { position: absolute; top: 100%; left: 0; right: 0; background: var(--card); border: 2px solid var(--border); border-top: none; border-radius: 0 0 12px 12px; max-height: 300px; overflow-y: auto; z-index: 100; }
+        .search-result-item { padding: 14px 20px; cursor: pointer; border-bottom: 1px solid var(--border); }
+        .search-result-item:hover { background: var(--highlight); }
+
+        .motivational-msg { background: linear-gradient(135deg, var(--highlight) 0%, rgba(46, 139, 87, 0.08) 100%); border-left: 4px solid var(--success); border-radius: 8px; padding: 16px; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+        .percentile-indicator { position: relative; height: 24px; background: linear-gradient(90deg, #DC3545 0%, #D97706 25%, #F59E0B 50%, #2E8B57 75%, #0D7377 100%); border-radius: 12px; }
+        .percentile-marker { position: absolute; top: -4px; width: 4px; height: 32px; background: white; border-radius: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); transform: translateX(-50%); }
+
+        .greeting-banner { background: linear-gradient(135deg, #0D7377 0%, #14919B 50%, #2E8B57 100%); border-radius: 20px; position: relative; overflow: hidden; }
+        .info-box { background: var(--highlight); border: 1px solid rgba(13, 115, 119, 0.2); border-radius: 12px; padding: 16px 20px; }
+
+        /* PDF & Print Mode */
+        body.pdf-mode { background: white !important; width: 210mm !important; margin: 0 auto !important; }
+        body.pdf-mode .bg-pattern, body.pdf-mode #searchSection, body.pdf-mode .btn-primary, body.pdf-mode .btn-secondary, body.pdf-mode #motivationalBanner, body.pdf-mode .info-box { background: none !important; display: none !important; }
+        body.pdf-mode #dashboardSection { display: block !important; padding: 0 !important; }
+        body.pdf-mode #pdfContent { width: 100% !important; padding: 10mm !important; overflow: visible !important; height: auto !important; }
+        body.pdf-mode .scroll-container { overflow: visible !important; }
+        body.pdf-mode .card { box-shadow: none !important; border: 1px solid #ccc !important; margin-bottom: 10px !important; page-break-inside: avoid; }
+        body.pdf-mode .greeting-banner { background: #0D7377 !important; color: white !important; padding: 10px !important; margin-bottom: 10px !important; }
+        body.pdf-mode .greeting-banner * { color: white !important; }
+        body.pdf-mode .grid.grid-cols-2.lg\:grid-cols-4 { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+        body.pdf-mode .grid.grid-cols-1.lg\:grid-cols-2 { display: block !important; }
+        body.pdf-mode .chart-container { height: 180px !important; margin-bottom: 10px !important; page-break-inside: avoid; }
+        body.pdf-mode .data-table { font-size: 9pt !important; }
+        body.pdf-mode .data-table th { background: #eee !important; }
+
+        @media print {
+            body { background: white !important; }
+            #searchSection, .btn-primary, .btn-secondary, #motivationalBanner, .info-box { display: none !important; }
+            #dashboardSection { display: block !important; }
+        }
+    </style>
+</head>
+<body class="bg-pattern">
+    <!-- Search Section -->
+    <section id="searchSection" class="min-h-screen flex items-center justify-center px-4 py-12">
+        <div class="w-full max-w-xl">
+            <div class="text-center mb-10 animate-fade-in-up">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-[#0D7377] to-[#14919B] mb-6 animate-float">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <h1 class="font-display text-3xl md:text-4xl font-bold text-[#2D2A26] mb-3">Pemantauan Try Out UTBK</h1>
+                <p class="text-[#6B6560] text-lg leading-relaxed">Pantau perkembangan belajar anak.</p>
+            </div>
+
+            <div class="animate-fade-in-up stagger-1">
+                <div class="card p-6 md:p-8">
+                    <div class="relative">
+                        <label class="block text-sm font-semibold text-[#2D2A26] mb-3">Cari Siswa</label>
+                        <div class="relative">
+                            <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B6560]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <input type="text" id="searchInput" class="input-search" placeholder="Ketik nama atau nomor peserta..." autocomplete="off">
+                            <div id="searchResults" class="search-results hidden"></div>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex items-center gap-3 text-sm text-[#6B6560]">
+                        <svg class="w-5 h-5 text-[#0D7377]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Muat data terlebih dahulu</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center animate-fade-in-up stagger-2">
+                <button id="btnLoadData" class="btn-primary inline-flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <span>Muat Data</span>
+                </button>
+                <!-- Area Debug -->
+                <div id="loadStatus" class="mt-4 text-sm text-[#6B6560] text-left bg-white p-4 rounded-lg border border-gray-200 hidden">
+                    <p class="font-bold text-xs uppercase text-gray-400 mb-2">Log Proses:</p>
+                    <div id="logContent" class="text-xs font-mono whitespace-pre-wrap"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-[#FAF7F2]/95 flex items-center justify-center z-50 hidden">
+        <div class="text-center">
+            <div class="w-16 h-16 border-4 border-[#E5DFD5] border-t-[#0D7377] rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-[#6B6560] font-medium">Memuat data...</p>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <section id="dashboardSection" class="hidden px-4 py-8">
+        <div class="max-w-6xl mx-auto" id="pdfContent">
+            <!-- Greeting Banner -->
+            <div class="greeting-banner p-6 md:p-8 mb-8 animate-fade-in-up relative z-10 text-white">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                    </div>
+                    <div>
+                        <h1 class="font-display text-2xl md:text-3xl font-bold mb-1" id="greetingText">Selamat Datang</h1>
+                        <p class="opacity-80" id="greetingSubtext">Memuat informasi...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Header -->
+            <header class="mb-6 animate-fade-in-up stagger-1">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                    <button id="btnBack" class="inline-flex items-center gap-2 text-[#0D7377] font-medium hover:underline">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                        <span>Cari Siswa Lain</span>
+                    </button>
+                    <div class="flex items-center gap-3">
+                        <button id="btnPrint" class="btn-secondary text-sm py-2">Cetak</button>
+                        <button id="btnDownload" class="btn-secondary text-sm py-2" style="background: #0D7377; color: white; border-color: #0D7377;">Unduh PDF</button>
+                    </div>
+                </div>
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div>
+                        <h2 class="font-display text-xl md:text-2xl font-bold text-[#2D2A26]"><span id="studentNameDisplay"></span></h2>
+                        <p class="text-[#6B6560]">No. Peserta: <span id="studentIdDisplay" class="font-medium text-[#2D2A26]"></span></p>
+                    </div>
+                    <span class="px-3 py-1 bg-[#F3EDE4] rounded-full text-sm font-medium text-[#6B6560]" id="totalTOCount">0 TO</span>
+                </div>
+            </header>
+
+            <!-- Motivational Banner -->
+            <div id="motivationalBanner" class="motivational-msg mb-8 animate-fade-in-up stagger-2">
+                <p class="text-[#2D2A26] font-medium" id="motivationalText"></p>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="card p-5 animate-fade-in-up stagger-2">
+                    <p class="text-xs text-[#6B6560] mb-1">Rata-rata Keseluruhan</p>
+                    <p id="overallAvgValue" class="text-2xl font-bold text-[#2D2A26] font-display">---</p>
+                    <p id="overallAvgDesc" class="text-xs text-[#6B6560] mt-1">dari semua TO</p>
+                </div>
+                <div class="card p-5 animate-fade-in-up stagger-3">
+                    <p class="text-xs text-[#6B6560] mb-1">Rata-rata TO Terakhir</p>
+                    <p id="avgScoreValue" class="text-2xl font-bold text-[#2D2A26] font-display">---</p>
+                    <p id="avgScoreDiff" class="text-xs text-[#6B6560] mt-1"></p>
+                </div>
+                <div class="card p-5 animate-fade-in-up stagger-4">
+                    <p class="text-xs text-[#6B6560] mb-1">Subtes Terkuat</p>
+                    <p id="strongestSubject" class="text-sm font-bold text-[#2D2A26] truncate">---</p>
+                    <p id="strongestScore" class="text-xl font-bold text-[#2E8B57] font-display">---</p>
+                </div>
+                <div class="card p-5 animate-fade-in-up stagger-5">
+                    <p class="text-xs text-[#6B6560] mb-1">Perlu Ditingkatkan</p>
+                    <p id="weakestSubject" class="text-sm font-bold text-[#2D2A26] truncate">---</p>
+                    <p id="weakestScore" class="text-xl font-bold text-[#D97706] font-display">---</p>
+                </div>
+            </div>
+
+            <!-- Position in Class -->
+            <div class="card p-6 mb-8 animate-fade-in-up stagger-4">
+                <h3 class="text-lg font-bold text-[#2D2A26] mb-2">Posisi dalam Angkatan</h3>
+                <div class="mb-6">
+                    <div class="flex justify-between mb-2 text-sm"><span class="text-[#6B6560]">Persentil</span><span id="percentileValue" class="font-bold text-[#0D7377]">-</span></div>
+                    <div class="percentile-indicator"><div id="percentileMarker" class="percentile-marker" style="left: 50%"></div></div>
+                </div>
+                <div class="grid grid-cols-4 gap-4 text-center">
+                    <div class="p-3 bg-[#F3EDE4] rounded-xl"><p class="text-xs text-[#6B6560]">Peringkat</p><p id="rankValue" class="text-lg font-bold text-[#2D2A26]">-</p></div>
+                    <div class="p-3 bg-[#F3EDE4] rounded-xl"><p class="text-xs text-[#6B6560]">Total</p><p id="totalStudents" class="text-lg font-bold text-[#2D2A26]">-</p></div>
+                    <div class="p-3 bg-[#F3EDE4] rounded-xl"><p class="text-xs text-[#6B6560]">Rata2 Angkatan</p><p id="classAvgOverall" class="text-lg font-bold text-[#2D2A26]">-</p></div>
+                    <div class="p-3 bg-[#F3EDE4] rounded-xl"><p class="text-xs text-[#6B6560]">Selisih</p><p id="diffFromClass" class="text-lg font-bold">-</p></div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="card p-6 animate-fade-in-up stagger-4">
+                    <h3 class="font-bold text-[#2D2A26] mb-4">Perkembangan Nilai</h3>
+                    <div class="chart-container"><canvas id="lineChart"></canvas></div>
+                </div>
+                <div class="card p-6 animate-fade-in-up stagger-5">
+                    <h3 class="font-bold text-[#2D2A26] mb-4">Profil Kemampuan</h3>
+                    <div class="chart-container"><canvas id="radarChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- History Table -->
+            <div class="card overflow-hidden animate-fade-in-up stagger-6">
+                <div class="p-4 border-b"><h3 class="font-bold text-[#2D2A26]">Riwayat Nilai</h3></div>
+                <div class="scroll-container">
+                    <table class="data-table">
+                        <thead><tr><th>TO</th><th>PU</th><th>PPU</th><th>PBM</th><th>PK</th><th>Lit.Ind</th><th>Lit.Ing</th><th>PM</th><th>Rata2</th></tr></thead>
+                        <tbody id="historyTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // =====================================================
+        // KONFIGURASI - LINK BARU DITERAPKAN DI SINI
+        // =====================================================
+        const CONFIG = {
+            // Link asli
+            sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkELVG1kzMO7l-FyObUwG2y8En19INkNGGfXKsIlx9br8MiOe7IfAcj2ng1GrLVhy1sAqquDSKIxKD/pub?output=csv',
+            // Proxy untuk bypass CORS (jika error Failed to Fetch)
+            proxyUrl: 'https://corsproxy.io/?'
+        };
+
+        let allStudentsData = [];
+        let currentStudentData = null;
+        let lineChart = null;
+        let radarChart = null;
+
+        // Variabel untuk menyimpan mapping kolom
+        let COLS = { NAME: null, ID: null, TO: null, SCORE_AVG: null, CLASS_AVG: null };
+        const SUB_TESTS = ['PU', 'PPU', 'PBM', 'PK', 'LitInd', 'LitIng', 'PM'];
+
+        const MOTIVATIONAL_MESSAGES = [
+            { min: 700, msg: "Luar biasa! Prestasi yang sangat membanggakan." },
+            { min: 600, msg: "Hasil yang sangat baik! Terus pertahankan." },
+            { min: 500, msg: "Hasil yang cukup baik. Terus berlatih!" },
+            { min: 0, msg: "Jangan menyerah! Terus semangat." }
+        ];
+
+        const el = {
+            searchSection: document.getElementById('searchSection'),
+            dashboardSection: document.getElementById('dashboardSection'),
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            searchInput: document.getElementById('searchInput'),
+            searchResults: document.getElementById('searchResults'),
+            btnLoadData: document.getElementById('btnLoadData'),
+            btnBack: document.getElementById('btnBack'),
+            btnPrint: document.getElementById('btnPrint'),
+            btnDownload: document.getElementById('btnDownload'),
+            loadStatus: document.getElementById('loadStatus'),
+            logContent: document.getElementById('logContent'),
+            studentNameDisplay: document.getElementById('studentNameDisplay'),
+            studentIdDisplay: document.getElementById('studentIdDisplay'),
+            greetingText: document.getElementById('greetingText'),
+            greetingSubtext: document.getElementById('greetingSubtext'),
+            totalTOCount: document.getElementById('totalTOCount'),
+            motivationalText: document.getElementById('motivationalText'),
+            overallAvgValue: document.getElementById('overallAvgValue'),
+            overallAvgDesc: document.getElementById('overallAvgDesc'),
+            avgScoreValue: document.getElementById('avgScoreValue'),
+            avgScoreDiff: document.getElementById('avgScoreDiff'),
+            strongestSubject: document.getElementById('strongestSubject'),
+            strongestScore: document.getElementById('strongestScore'),
+            weakestSubject: document.getElementById('weakestSubject'),
+            weakestScore: document.getElementById('weakestScore'),
+            percentileValue: document.getElementById('percentileValue'),
+            percentileMarker: document.getElementById('percentileMarker'),
+            rankValue: document.getElementById('rankValue'),
+            totalStudents: document.getElementById('totalStudents'),
+            classAvgOverall: document.getElementById('classAvgOverall'),
+            diffFromClass: document.getElementById('diffFromClass'),
+            historyTableBody: document.getElementById('historyTableBody')
+        };
+
+        // =====================================================
+        // LOGGING HELPER
+        // =====================================================
+        function log(msg, isError = false) {
+            console.log(msg);
+            if(el.logContent) {
+                el.logContent.innerHTML += `<div style="color: ${isError ? 'red' : 'black'}">${msg}</div>`;
+            }
+            el.loadStatus.classList.remove('hidden');
+        }
+
+        // =====================================================
+        // ROBUST CSV PARSER
+        // =====================================================
+        function parseCSV(text) {
+            log("1. Parsing teks CSV...");
+            const lines = text.split(/\r?\n/);
+            if (lines.length < 2) {
+                log("Error: File CSV kosong.", true);
+                return [];
+            }
+            
+            const splitLine = (line) => {
+                const result = []; let current = ''; let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') inQuotes = !inQuotes;
+                    else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+                    else current += char;
+                }
+                result.push(current.trim());
+                return result;
+            };
+
+            const headers = splitLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
+            log(`2. Header terdeteksi: ${headers.join(', ')}`);
+
+            detectColumns(headers);
+
+            if (!COLS.NAME) { log("Error: Kolom 'Nama' tidak ditemukan.", true); return []; }
+            if (!COLS.TO) { log("Error: Kolom 'TO' tidak ditemukan.", true); return []; }
+
+            log("3. Struktur data OK. Baca baris...");
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const values = splitLine(lines[i]);
+                const row = {};
+                
+                headers.forEach((h, idx) => {
+                    let key = h;
+                    if (h === COLS.NAME) key = '_NAME';
+                    if (h === COLS.ID) key = '_ID';
+                    if (h === COLS.TO) key = '_TO';
+                    if (h === COLS.SCORE_AVG) key = '_AVG';
+                    if (h === COLS.CLASS_AVG) key = '_CLASS_AVG';
+                    
+                    const scoreMatch = h.match(/Skor[_\s](\w+)/i);
+                    if (scoreMatch) key = `_SCORE_${scoreMatch[1].toUpperCase()}`;
+
+                    row[key] = values[idx] || '';
+                    if (key.startsWith('_SCORE') || key === '_AVG' || key === '_CLASS_AVG' || key === '_TO') {
+                        row[key] = parseFloat(String(row[key]).replace(',', '.')) || 0;
+                    }
+                });
+                
+                if (row['_NAME']) data.push(row);
+            }
+            
+            log(`4. Total baris: ${data.length}`);
+            return data;
+        }
+
+        function detectColumns(headers) {
+            COLS.NAME = headers.find(h => /nama/i.test(h) && !/peserta/i.test(h));
+            COLS.ID = headers.find(h => /no|id|peserta/i.test(h));
+            COLS.TO = headers.find(h => /^to$/i.test(h) || /try\s*out/i.test(h));
+            COLS.SCORE_AVG = headers.find(h => /rata/i.test(h) && /skor/i.test(h) && !/tiap/i.test(h));
+            COLS.CLASS_AVG = headers.find(h => /rerata|tiap/i.test(h));
+            log(`   -> Kolom Nama: ${COLS.NAME || '??'}`);
+        }
+
+        function groupByStudent(data) {
+            const students = {};
+            data.forEach(row => {
+                const name = row['_NAME'];
+                const id = row['_ID'] || 'NO_ID';
+                if (!name) return;
+
+                const key = (id && id !== 'NO_ID' && id !== '#N/A') ? id : `NAME_${name.toUpperCase()}`;
+
+                if (!students[key]) students[key] = { id: id !== 'NO_ID' ? id : '-', name: name, results: [] };
+                
+                students[key].results.push({
+                    TO: row['_TO'],
+                    avg: row['_AVG'] || 0,
+                    classAvg: row['_CLASS_AVG'] || 0,
+                    scores: {
+                        PU: row['_SCORE_PU'] || 0, PPU: row['_SCORE_PPU'] || 0, PBM: row['_SCORE_PBM'] || 0,
+                        PK: row['_SCORE_PK'] || 0, LitInd: row['_SCORE_LITIND'] || 0, LitIng: row['_SCORE_LITING'] || 0, PM: row['_SCORE_PM'] || 0
+                    }
+                });
+            });
+
+            const result = Object.values(students);
+            result.forEach(s => {
+                s.results.sort((a, b) => a.TO - b.TO);
+                s.overallAverage = s.results.reduce((sum, r) => sum + r.avg, 0) / s.results.length;
+            });
+            
+            log(`5. Total siswa: ${result.length}`);
+            return result;
+        }
+
+        // =====================================================
+        // DATA FETCHING (DENGAN PROXY)
+        // =====================================================
+        async function fetchData() {
+            el.loadingOverlay.classList.remove('hidden');
+            el.logContent.innerHTML = '';
+            log("Menghubungi server...");
+            el.btnLoadData.disabled = true;
+
+            try {
+                // Gunakan Proxy
+                const finalUrl = CONFIG.proxyUrl + encodeURIComponent(CONFIG.sheetUrl);
+                log("Menggunakan Proxy untuk bypass CORS...");
+                
+                const response = await fetch(finalUrl);
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                log("Data diterima.");
+                
+                const text = await response.text();
+                const parsed = parseCSV(text);
+                
+                if (parsed.length === 0) throw new Error("Data kosong.");
+                
+                allStudentsData = groupByStudent(parsed);
+                if (allStudentsData.length === 0) throw new Error("Gagal grouping.");
+                
+                allStudentsData.sort((a, b) => b.overallAverage - a.overallAverage);
+                
+                log("<b style='color:green'>SIAP!</b> Data berhasil dimuat.", false);
+                el.loadStatus.style.borderColor = 'green';
+                
+            } catch (error) {
+                log(`ERROR: ${error.message}`, true);
+                // Log tambahan untuk user
+                log("Jika error persist, coba buka file ini via Live Server atau hosting online.", true);
+                el.loadStatus.style.borderColor = 'red';
+            } finally {
+                el.loadingOverlay.classList.add('hidden');
+                el.btnLoadData.disabled = false;
+            }
+        }
+
+        // =====================================================
+        // UI LOGIC (Tidak berubah signifikan)
+        // =====================================================
+        function handleSearch(q) {
+            const t = q.trim().toLowerCase();
+            if(t.length < 2) { el.searchResults.classList.add('hidden'); return; }
+            
+            const m = allStudentsData.filter(s => s.name.toLowerCase().includes(t) || s.id.toLowerCase().includes(t)).slice(0, 8);
+            
+            el.searchResults.innerHTML = m.length ? m.map(s => `
+                <div class="search-result-item" data-id="${s.id}" data-name="${s.name}">
+                    <p class="font-medium">${s.name}</p>
+                    <p class="text-xs text-gray-500">ID: ${s.id} | ${s.results.length} TO | Avg: ${Math.round(s.overallAverage)}</p>
+                </div>
+            `).join('') : '<div class="p-4 text-gray-500 text-center">Tidak ditemukan</div>';
+            
+            el.searchResults.classList.remove('hidden');
+        }
+
+        function selectStudent(id, name) {
+            currentStudentData = allStudentsData.find(s => s.id === id) || allStudentsData.find(s => s.name === name);
+            if (!currentStudentData) return;
+            el.searchResults.classList.add('hidden');
+            el.searchInput.value = '';
+            showDashboard();
+        }
+
+        function showDashboard() {
+            el.searchSection.classList.add('hidden');
+            el.dashboardSection.classList.remove('hidden');
+            
+            const h = new Date().getHours();
+            el.greetingText.textContent = `${h<12?'Pagi':h<15?'Siang':h<18?'Sore':'Malam'}, Orang Tua/Wali`;
+            el.greetingSubtext.textContent = `Hasil Try Out untuk ${currentStudentData.name}`;
+            el.studentNameDisplay.textContent = currentStudentData.name;
+            el.studentIdDisplay.textContent = currentStudentData.id;
+            el.totalTOCount.textContent = `${currentStudentData.results.length} TO`;
+            
+            const res = currentStudentData.results;
+            const last = res[res.length-1];
+            
+            el.overallAvgValue.textContent = Math.round(currentStudentData.overallAverage);
+            el.avgScoreValue.textContent = Math.round(last.avg);
+            
+            const diff = last.avg - last.classAvg;
+            el.avgScoreDiff.innerHTML = diff>=0 ? `<span class="text-green-600">+${Math.round(diff)}</span> di atas rataan` : `<span class="text-orange-500">${Math.round(diff)}</span> dari rataan`;
+            
+            let str = {n:'', v:0}, w = {n:'', v:999};
+            SUB_TESTS.forEach(t => {
+                const avg = res.reduce((s,r) => s + r.scores[t], 0)/res.length;
+                if(avg > str.v) { str.n = t; str.v = avg; }
+                if(avg < w.v) { w.n = t; w.v = avg; }
+            });
+            el.strongestSubject.textContent = str.n;
+            el.strongestScore.textContent = Math.round(str.v);
+            el.weakestSubject.textContent = w.n;
+            el.weakestScore.textContent = Math.round(w.v);
+            
+            const m = MOTIVATIONAL_MESSAGES.find(m=>currentStudentData.overallAverage>=m.min);
+            el.motivationalText.textContent = m.msg;
+            
+            renderPosition();
+            renderCharts();
+            renderTable();
+            window.scrollTo(0,0);
+        }
+
+        function renderPosition() {
+            const total = allStudentsData.length;
+            const rank = allStudentsData.findIndex(s => s.id === currentStudentData.id)+1;
+            const pct = ((total - rank + 1)/total*100).toFixed(0);
+            const cAvg = allStudentsData.reduce((a,s)=>a+s.overallAverage,0)/total;
+            
+            el.percentileValue.textContent = `Top ${pct}%`;
+            el.percentileMarker.style.left = `${pct}%`;
+            el.rankValue.textContent = rank;
+            el.totalStudents.textContent = total;
+            el.classAvgOverall.textContent = Math.round(cAvg);
+            const d = currentStudentData.overallAverage - cAvg;
+            el.diffFromClass.innerHTML = d>=0 ? `<span class="text-green-600">+${Math.round(d)}</span>` : `<span class="text-orange-500">${Math.round(d)}</span>`;
+        }
+
+        function renderCharts() {
+            const ctxLine = document.getElementById('lineChart').getContext('2d');
+            const ctxRadar = document.getElementById('radarChart').getContext('2d');
+            if(lineChart) lineChart.destroy();
+            if(radarChart) radarChart.destroy();
+            
+            const labels = currentStudentData.results.map(r=>`TO ${r.TO}`);
+            
+            lineChart = new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Siswa', data: currentStudentData.results.map(r=>r.avg), borderColor: '#0D7377', tension:0.3, fill:false },
+                        { label: 'Angkatan', data: currentStudentData.results.map(r=>r.classAvg), borderColor: '#D97706', borderDash:[5,5], tension:0.3, fill:false }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' } } }
+            });
+            
+            const avgScores = SUB_TESTS.map(t => currentStudentData.results.reduce((s,r) => s + r.scores[t], 0)/currentStudentData.results.length);
+            
+            radarChart = new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: SUB_TESTS,
+                    datasets: [{ label: 'Skor', data: avgScores, borderColor: '#0D7377', backgroundColor: 'rgba(13,115,119,0.2)' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { r: { beginAtZero: false } } }
+            });
+        }
+
+        function renderTable() {
+            el.historyTableBody.innerHTML = currentStudentData.results.map(r => `
+                <tr>
+                    <td class="font-medium">TO ${r.TO}</td>
+                    <td>${Math.round(r.scores.PU)}</td>
+                    <td>${Math.round(r.scores.PPU)}</td>
+                    <td>${Math.round(r.scores.PBM)}</td>
+                    <td>${Math.round(r.scores.PK)}</td>
+                    <td>${Math.round(r.scores.LitInd)}</td>
+                    <td>${Math.round(r.scores.LitIng)}</td>
+                    <td>${Math.round(r.scores.PM)}</td>
+                    <td class="font-bold text-[#0D7377]">${Math.round(r.avg)}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function generatePDF() {
+            document.body.classList.add('pdf-mode');
+            if(lineChart) lineChart.resize();
+            if(radarChart) radarChart.resize();
+            await new Promise(r => setTimeout(r, 500));
+            const element = document.getElementById('pdfContent');
+            const opt = { margin: 0, filename: `TO_${currentStudentData.name}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, scrollY: 0, windowWidth: 800 }, jsPDF: { unit: 'mm', format: [210, 330], orientation: 'portrait' } };
+            html2pdf().set(opt).from(element).save().then(()=>{ document.body.classList.remove('pdf-mode'); });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            el.btnLoadData.addEventListener('click', fetchData);
+            el.searchInput.addEventListener('input', (e) => handleSearch(e.target.value));
+            el.searchResults.addEventListener('click', (e) => {
+                const item = e.target.closest('.search-result-item');
+                if(item) selectStudent(item.dataset.id, item.dataset.name);
+            });
+            el.btnBack.addEventListener('click', () => { el.dashboardSection.classList.add('hidden'); el.searchSection.classList.remove('hidden'); });
+            el.btnPrint.addEventListener('click', () => window.print());
+            el.btnDownload.addEventListener('click', generatePDF);
+        });
+    </script>
+</body>
+</html>
